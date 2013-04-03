@@ -22,17 +22,18 @@ enum dataType{
 class SaveNode {
 private:
 	std::string identifier;
-	std::vector<std::string> valueIDs;
+	std::vector<std::string> dataIDs;
 	std::vector<char> dataArray;
-	std::vector<int> dataLength;
-	std::vector<dataType> types;
+	std::vector<int> dataLengths;
+	std::vector<size_t> typeSizes;
+	std::vector<int> offsets;
 	
 	size_t getTypeSize(dataType type);
 
 	// Copy the given data in a char array (we want to save the data in 1 byte chunks)
 	void dataToByteArray(void* data, size_t size, unsigned int length);
 
-	void byteArrayToData(void* data, size_t size, unsigned int length);
+	void byteArrayToData(void* data, size_t size, unsigned int length, unsigned int index);
 
 public:
 
@@ -46,66 +47,72 @@ public:
 
 	void swap(SaveNode& orig);
 
-	void save(std::vector<char>& nodeData);
-
-	bool is_big_endian(void);
-
-	template <typename TYPE>
-	void add(const std::string& id, TYPE* value, unsigned int length = 1) 
-	{
-		if(value == NULL) throw std::runtime_error("Given value was NULL");
-
-		valueIDs.push_back(id);
-		std::vector<char> v;
-		dataToByteArray(value, sizeof(TYPE), length);
-		dataLength.push_back(length);
-	}
-
-	template <typename TYPE>
-	void add(const std::string& id, TYPE value)
-	{
-		add(id, &value);
-	}
-
-	template <typename TYPE>
-	void load(const std::string& id, TYPE* value, unsigned int length = 1) 
-	{
-		if (std::find(valueIDs.begin(), valueIDs.end(), id) != valueIDs.end())
-		{
-			std::cout << "found " << id << std::endl;
-		} else 
-		{
-			throw "Given identifier not found";
-		}
-	}
-
-	template <typename TYPE>
-	void load(const std::string& id, TYPE value) 
-	{
-		load(id, &value);
-	}
-	
 	void setID(std::string id);
+
+	/*
+		The function that saves the given data by "data" in to the node.
+	*/
+	template <typename TYPE>
+	void add(const std::string& id, TYPE* data, unsigned int length = 1) 
+	{
+		if(data == NULL) throw std::runtime_error("Given data was NULL.");
+
+		dataIDs.push_back(id);
+		dataToByteArray(data, sizeof(TYPE), length);
+		dataLengths.push_back(length);
+		typeSizes.push_back(sizeof(TYPE));
+	}
+
+	template <typename TYPE>
+	void add(const std::string& id, TYPE data)
+	{
+		add(id, &data);
+	}
+
+	/*
+		The function that loads the stored data by the node in the given container "data"
+	*/
+	template <typename TYPE>
+	void load(const std::string& id, TYPE* data, unsigned int length = 1) 
+	{
+		// Checks that the inputs are valid
+		if(data == NULL) throw std::runtime_error("Given data was NULL.");
+		unsigned int idIndex = std::find(dataIDs.begin(), dataIDs.end(), id) - dataIDs.begin();
+		if (idIndex >= dataIDs.size()) throw std::runtime_error("Entry not found from the save node.");
+		if(length < (unsigned int)dataLengths[idIndex] || length > (unsigned int)dataLengths[idIndex]) 
+		{
+			throw std::runtime_error("Incorrect dataLengths.");
+		}
+		byteArrayToData(data, sizeof(TYPE), length, idIndex);
+	}
+
+	template <typename TYPE>
+	void load(const std::string& id, TYPE &data) 
+	{
+		load(id, &data);
+	}
 
 	std::string getIdentifier() 
 	{
 		return identifier;
 	}
 
-	std::vector<std::string> getValueIDs() 
+
+	int getEntryCount()
 	{
-		return valueIDs;
+		return dataIDs.size();
 	}
 
-	std::vector<char> getDataArray()
+	int getDataByteCount()
 	{
-		return dataArray;
+		return dataArray.size();
 	}
 
-	std::vector<int> getDataLengths ()
-	{
-		return dataLength;
-	}
+	void save(std::vector<char>& nodeData);
+
+	void load(std::vector<char>& nodeData);
+
+	bool is_big_endian(void);
 
 	virtual ~SaveNode();
 };
