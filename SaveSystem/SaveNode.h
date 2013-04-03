@@ -25,7 +25,7 @@ private:
 	std::vector<std::string> dataIDs;
 	std::vector<char> dataArray;
 	std::vector<int> dataLengths;
-	std::vector<size_t> typeSizes;
+	std::vector<int> typeSizes;
 	std::vector<int> offsets;
 	
 	size_t getTypeSize(dataType type);
@@ -56,11 +56,12 @@ public:
 	void add(const std::string& id, TYPE* data, unsigned int length = 1) 
 	{
 		if(data == NULL) throw std::runtime_error("Given data was NULL.");
+		if (std::find(dataIDs.begin(), dataIDs.end(), id) != dataIDs.end())  throw std::runtime_error("Indentifier used in node.");
 
 		dataIDs.push_back(id);
 		dataToByteArray(data, sizeof(TYPE), length);
 		dataLengths.push_back(length);
-		typeSizes.push_back(sizeof(TYPE));
+		typeSizes.push_back((int)sizeof(TYPE));
 	}
 
 	template <typename TYPE>

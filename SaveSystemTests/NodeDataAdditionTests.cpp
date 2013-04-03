@@ -23,7 +23,7 @@ SUITE(AddingToNode)
 		
 		CHECK_EQUAL(1, node.getEntryCount());
 		
-		node.add("test", 42);
+		node.add("more", 42);
 
 		CHECK_EQUAL(2, node.getEntryCount());
 	}
@@ -72,6 +72,27 @@ SUITE(AddingToNode)
 
 		CHECK_EQUAL((sizeof(bool)*5)/sizeof(char), node.getDataByteCount());
 	}
+
+	TEST(AddSameIdentifierTwice)
+	{
+		node = SaveNode("bool node");
+		bool truths[5] = {true,true,false,true,true};
+		node.add("test", truths, 5);
+
+		char chars[5] = {'d','e','g','s','f'};
+
+		try
+		{
+			node.add("test", chars, 5);
+			CHECK(false);
+		} catch(std::runtime_error)
+		{
+			CHECK(true);
+		}
+
+		CHECK_EQUAL((sizeof(bool)*5)/sizeof(char), node.getDataByteCount());
+	}
+
 
 	TEST(AddMultipleEntrysToNode)
 	{
