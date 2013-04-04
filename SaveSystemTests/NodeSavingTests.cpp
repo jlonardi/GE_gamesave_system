@@ -70,12 +70,12 @@ SUITE(NodeSavingTests)
 		CHECK_EQUAL((int)expected_size, size);
 
 		size_t offset = sizeof(bool) + sizeof(int);
-
+		std::cout << "offset: " << offset << std::endl;
 		// read the lenght of the 1st entrys ID
-		size = 0;
+		size = 5;
 		std::memcpy(&size, &data[(int)offset], sizeof(int));
 		CHECK_EQUAL(4*sizeof(char), size); // TEST!?!?!?!?!
-		std::memcpy(&size, &data[(int)offset], 1);
+		std::memcpy(&size, &data[(int)offset+sizeof(int)], sizeof(int));
 		CHECK_EQUAL(4*sizeof(char), size); // TEST!?!?!?!?!
 		std::cout << sizeof(int) << std::endl;
 		CHECK_EQUAL(4*sizeof(char), (int)data[(int)offset]);
