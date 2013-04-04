@@ -86,6 +86,10 @@ void SaveNode::byteArrayToData(void* data, size_t size, unsigned int length, uns
 	|------------------------------------------------------------------------------
 	|	A value that tells the lenght of the whole node.
 	|------------------------------------------------------------------------------
+	|	A value that tells the size of the nodes name.
+	|------------------------------------------------------------------------------
+	|	The node name data.
+	|------------------------------------------------------------------------------
 	|----------------		DATA OF AN ENTRY
 	|------------------------------------------------------------------------------
 	|	Lenght of the ID data.
@@ -130,6 +134,10 @@ void SaveNode::save(std::vector<char>& nodeData)
 	// node lenght field
 	dataSize += sizeof(int);
 	//std::cout << "node lenght field: " << sizeof(int) << std::endl;
+	// the lenght of the node name field
+	dataSize += sizeof(int);
+	// the size needed for the name itself
+	dataSize += sizeof(char) * identifier.size() + 1;
 
 	// size needed for the ID lenght values
 	dataSize += sizeof(int) * entryCount;
@@ -164,6 +172,13 @@ void SaveNode::save(std::vector<char>& nodeData)
 	// copy the size of the node
 	std::memcpy(&nodeData[sizeof(bool)], &dataSize, sizeof(int));
 	int offset = (int)sizeof(bool) + (int)sizeof(int);
+	int nodeNameLenght = identifier.size()+1;
+	// copy the size of the node name
+	std::memcpy(&nodeData[offset], &nodeNameLenght, sizeof(int));
+	offset += sizeof(int);
+	// copy the node name
+	std::memcpy(&nodeData[offset], identifier.c_str(), sizeof(char)*nodeNameLenght);
+	offset += sizeof(char)*identifier.size()+1;
 	// save the entrys
 	for(int i = 0; i < entryCount; i++)
 	{
@@ -173,9 +188,9 @@ void SaveNode::save(std::vector<char>& nodeData)
 		std::cout << "node ID lenght: " << lenght << std::endl;
 		std::cout << "node ID lenght save offset: " << offset << std::endl;
 		std::cout << "actual data saved: " << (int)nodeData[offset] << std::endl;
-		offset++;
+		offset += sizeof(int);
 		// save the ID
-		std::memcpy(&nodeData[offset], dataIDs[i].c_str(), sizeof(char)*lenght + 1);
+		std::memcpy(&nodeData[offset], dataIDs[i].c_str(), sizeof(char)*lenght+1);
 		offset += sizeof(char)*lenght;
 	}
 }

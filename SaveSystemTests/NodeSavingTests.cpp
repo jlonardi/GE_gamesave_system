@@ -40,6 +40,8 @@ SUITE(NodeSavingTests)
 			 ------------------------------------------------------------------------------
 			|	1  byte for the boolean to tell the endianness of the save.
 			|	4  bytes (one int) to tell the total size of the node.
+			|	4  bytes for the length of the node name
+			|	10 bytes for the name (includes null terminator)
 			|------------------------------------------------------------------------------
 			|	12  bytes for the ID lenghts, 3*4 bytes. (ints)
 			|------------------------------------------------------------------------------
@@ -58,6 +60,8 @@ SUITE(NodeSavingTests)
 		size_t expected_size = 0;
 		expected_size += sizeof(bool);
 		expected_size += sizeof(int);
+		expected_size += sizeof(int);
+		expected_size += sizeof(char)*10;
 		expected_size += sizeof(int)*3;
 		expected_size += sizeof(char)*28;
 		expected_size += sizeof(int)*3;
@@ -70,31 +74,34 @@ SUITE(NodeSavingTests)
 		for(int i = 0; i < data.size(); i++)
 		{
 			char c = data[i];
-			for (int i = 7; i >= 0; --i)
+			for (int j = 7; j >= 0; --j)
 			{
-				putchar( (c & (1 << i)) ? '1' : '0' );
+				putchar( (c & (1 << j)) ? '1' : '0' );
 			}
-			putchar('\n');
+			putchar(' ');
+			if(i%4 == 0) putchar('\n');
 		}
 		
 		int size = 0;
+		
+		// test the node total lenght
 		std::memcpy(&size, &data[sizeof(bool)], sizeof(int));
 		CHECK_EQUAL((int)expected_size, size);
-		
 		std::cout << std::endl;
 		size_t offset = sizeof(bool) + sizeof(int);
+		std::cout << "offset before copying name length: " << offset << std::endl;
+		// test the node name length
+		std::memcpy(&size, &data[offset], sizeof(int));
+		CHECK_EQUAL(10, size);
+		offset += sizeof(int);
+		
+		// jumps over the name
+		offset += sizeof(char)*10;
 
 		// read the lenght of the 1st entrys ID
 		size = 0;
 		std::memcpy(&size, &data[(int)offset], sizeof(int));
-		
-		std::bitset<32> x(size);
-		std::cout << "Binary presentation of ID size (memcpy): " << x << std::endl;
-		std::bitset<32> y((int)data[(int)offset]);
-		std::cout << "Binary presentation of ID size: (dereference)" << y << std::endl;
-		CHECK_EQUAL(4*sizeof(char), size); // TEST
-		
-		CHECK_EQUAL(4*sizeof(char), (int)data[(int)offset]);
+		CHECK_EQUAL(4*sizeof(char), size);
 		offset += sizeof(int);
 
 		std::string s;
