@@ -1,6 +1,8 @@
 #include "../UnitTest++/src/UnitTest++.h"
 #include "../SaveSystem/SaveNode.h"
 #include <stdint.h>
+#include <cstdio>
+#include <bitset>
 
 SUITE(NodeSavingTests)
 {
@@ -65,22 +67,33 @@ SUITE(NodeSavingTests)
 
 		std::vector<char> data;
 		node.save(data);
-		
-		
+		for(int i = 0; i < data.size(); i++)
+		{
+			char c = data[i];
+			for (int i = 7; i >= 0; --i)
+			{
+				putchar( (c & (1 << i)) ? '1' : '0' );
+			}
+			putchar('\n');
+		}
 		
 		int size = 0;
 		std::memcpy(&size, &data[sizeof(bool)], sizeof(int));
 		CHECK_EQUAL((int)expected_size, size);
-
+		
+		std::cout << std::endl;
 		size_t offset = sizeof(bool) + sizeof(int);
 
 		// read the lenght of the 1st entrys ID
 		size = 0;
 		std::memcpy(&size, &data[(int)offset], sizeof(int));
-		CHECK_EQUAL(4*sizeof(char), size); // TEST!?!?!?!?!
-		std::memcpy(&size, &data[(int)offset], 1);
-		CHECK_EQUAL(4*sizeof(char), size); // TEST!?!?!?!?!
-		std::cout << sizeof(int) << std::endl;
+		
+		std::bitset<32> x(size);
+		std::cout << "Binary presentation of ID size (memcpy): " << x << std::endl;
+		std::bitset<32> y((int)data[(int)offset]);
+		std::cout << "Binary presentation of ID size: (dereference)" << y << std::endl;
+		CHECK_EQUAL(4*sizeof(char), size); // TEST
+		
 		CHECK_EQUAL(4*sizeof(char), (int)data[(int)offset]);
 		offset += sizeof(int);
 
