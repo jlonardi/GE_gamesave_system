@@ -65,6 +65,9 @@ SUITE(NodeSavingTests)
 
 		std::vector<char> data;
 		node.save(data);
+		
+		
+		
 		int size = 0;
 		std::memcpy(&size, &data[sizeof(bool)], sizeof(int));
 		CHECK_EQUAL((int)expected_size, size);
