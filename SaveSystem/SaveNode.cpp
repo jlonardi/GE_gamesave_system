@@ -84,19 +84,19 @@ void SaveNode::byteArrayToData(void* data, size_t size, unsigned int length, uns
 	|------------------------------------------------------------------------------
 	|	A single byte to tell the endianness of the save.
 	|------------------------------------------------------------------------------
-	|	A value that tells the lenght of the whole node.
+	|	A value that tells the length of the whole node.
 	|------------------------------------------------------------------------------
-	|	A value that tells the size of the nodes name.
+	|	A value that tells the size of the nodes name (null terminator inc.).
 	|------------------------------------------------------------------------------
 	|	The node name data.
 	|------------------------------------------------------------------------------
 	|----------------		DATA OF AN ENTRY
 	|------------------------------------------------------------------------------
-	|	Lenght of the ID data.
+	|	length of the ID data  (null terminator inc.).
 	|------------------------------------------------------------------------------
 	|	The ID data.
 	|-----------------------------------------------------------------------------
-	|	Lenght of the bytedata of the entry.
+	|	length of the bytedata of the entry.
 	|-----------------------------------------------------------------------------
 	|	The data itself.
 	|-----------------------------------------------------------------------------
@@ -108,101 +108,129 @@ void SaveNode::byteArrayToData(void* data, size_t size, unsigned int length, uns
 	|----------------------------------------------------------------------------
 	|----------------		THE DATA OF THE OTHER ENTRY
 	|-----------------------------------------------------------------------------
-	|	Lenght of the ID data.
+	|	length of the ID data.
 	|-----------------------------------------------------------------------------
 	|	...rest of the data
 	 -----------------------------------------------------------------------------
 */
 
 void SaveNode::save(std::vector<char>& nodeData) 
-{
-	/*
-		First thing is to calculate the need of space that the node takes
-		when saving to the array. This is for avoiding multiple resizes.
-	*/
-	int entryCount = dataIDs.size();
+{	
 	if( (dataIDs.size() != dataLengths.size()) && (dataIDs.size() != typeSizes.size()) && (dataIDs.size() != offsets.size()))
 	{
 		throw std::runtime_error("Something went really wrong.");
 	}
 
-	//std::cout << "entry count: " << entryCount << std::endl;
-	size_t dataSize = 0;
-	// endiannes
-	dataSize += sizeof(bool);
-	//std::cout << "bool size: " << sizeof(bool) << std::endl;
-	// node lenght field
-	dataSize += sizeof(int);
-	//std::cout << "node lenght field: " << sizeof(int) << std::endl;
-	// the lenght of the node name field
-	dataSize += sizeof(int);
-	// the size needed for the name itself
-	dataSize += sizeof(char) * identifier.size() + 1;
-
-	// size needed for the ID lenght values
-	dataSize += sizeof(int) * entryCount;
-	//std::cout << "the size needed for ID lenghts: " << sizeof(int) * entryCount << std::endl;
-	// size needed for the IDs
-	int k = 0;
-	for(unsigned int i = 0; i < dataIDs.size(); i++)
-	{
-		dataSize += sizeof(char) * dataIDs[i].size() + 1;
-		//k += sizeof(char) * dataIDs[i].size();
-	}
-	//std::cout << "the string sizes were: " << k << std::endl;
-	// size needed for the datalenght fields
-	dataSize += sizeof(int) * entryCount;
-	//std::cout << "the size needed for datalenghts: " << sizeof(int) * entryCount << std::endl;
-	// size needed for the actual data
-	dataSize += sizeof(char) * dataArray.size();
-	//std::cout << "data size: " << dataArray.size() << std::endl;
-	// size needed for the type sizes
-	dataSize += sizeof(int) * entryCount;
-	//std::cout << "the size needed for type sizes: " << sizeof(int) * entryCount << std::endl;
-	// size needed for the offsets
-	dataSize += sizeof(int) * entryCount;
-	//std::cout << "the size needed for offsets: " << sizeof(int) * entryCount << std::endl;
+	size_t dataSize = nodeInternalDataLength();
 	
 	nodeData.resize((int)dataSize);
 
 	// copy the endiannes info
 	bool isBigEndian = is_big_endian();
 	std::memcpy(&nodeData[0], &isBigEndian, sizeof(bool));
-	//std::cout << "the data size in the function: " << dataSize << std::endl;
+
 	// copy the size of the node
 	std::memcpy(&nodeData[sizeof(bool)], &dataSize, sizeof(int));
 	int offset = (int)sizeof(bool) + (int)sizeof(int);
-	int nodeNameLenght = identifier.size()+1;
+	
 	// copy the size of the node name
-	std::memcpy(&nodeData[offset], &nodeNameLenght, sizeof(int));
+	int nodeNamelength = identifier.size()+1;
+	std::memcpy(&nodeData[offset], &nodeNamelength, sizeof(int));
 	offset += sizeof(int);
+
 	// copy the node name
-	std::memcpy(&nodeData[offset], identifier.c_str(), sizeof(char)*nodeNameLenght);
-	offset += sizeof(char)*identifier.size()+1;
+	std::memcpy(&nodeData[offset], identifier.c_str(), sizeof(char)*nodeNamelength);
+	offset += sizeof(char)*nodeNamelength;
+	//std::cout << "offset just before starting copy entry data: " << offset << std::endl;
+
 	// save the entrys
-	for(int i = 0; i < entryCount; i++)
+	for(int i = 0; i < dataIDs.size(); i++)
 	{
-		// save the lenght of the ID
-		int lenght = dataIDs[i].size();
-		std::memcpy(&nodeData[offset], &lenght, sizeof(int));
-		std::cout << "node ID lenght: " << lenght << std::endl;
-		std::cout << "node ID lenght save offset: " << offset << std::endl;
-		std::cout << "actual data saved: " << (int)nodeData[offset] << std::endl;
+		//std::cout << "offset when starting to write entry: " << offset << std::endl;
+		// save the length of the ID
+		int length = dataIDs[i].size() + 1;
+		std::memcpy(&nodeData[offset], &length, sizeof(int));
 		offset += sizeof(int);
+
 		// save the ID
-		std::memcpy(&nodeData[offset], dataIDs[i].c_str(), sizeof(char)*lenght+1);
-		offset += sizeof(char)*lenght;
+		std::memcpy(&nodeData[offset], dataIDs[i].c_str(), sizeof(char)*length);
+		offset += sizeof(char)*length;
+
+		int lengthOfByteData = sizeof(char)*typeSizes[i]*dataLengths[i];
+
+		// save the size of the data in bytes
+		std::memcpy(&nodeData[offset], &lengthOfByteData, sizeof(int));
+		offset += sizeof(int);
+
+		// copy the data itself
+		std::memcpy(&nodeData[offset], &dataArray[offsets[i]] ,lengthOfByteData);
+		offset += lengthOfByteData;
+
+		// copy the actual length of the corresponding data type
+		std::memcpy(&nodeData[offset], &dataLengths[i], sizeof(int));
+		offset += sizeof(int);
+
+		//// copy the type size that was used when the data was saved
+		std::memcpy(&nodeData[offset], &typeSizes[i] , sizeof(int));
+		offset += sizeof(int);
+
+		//// copy the size of the offset of the data in the dataArray
+		std::memcpy(&nodeData[offset], &offsets[i] , sizeof(int));
+		offset += sizeof(int);
 	}
-}
-
-void save(std::vector<char>& nodeData)
-{
-
 }
 
 void load(std::vector<char>& nodeData)
 {
 
+}
+
+/*
+	A helper function to calculate the internal size of the node. The information
+	is used when the node saves itself into a bytearray.
+*/
+size_t SaveNode::nodeInternalDataLength()
+{
+	size_t size = 0;
+	// endiannes
+	size += sizeof(bool);
+
+	// node length field
+	size += sizeof(int);
+
+	// the length of the node name field
+	size += sizeof(int);
+
+	// the size needed for the name itself
+	size += sizeof(char) * identifier.size() + 1;
+
+	int entryCount = dataIDs.size();
+
+	size += sizeof(int)*entryCount;
+
+	// size needed for the IDs and their length values
+	for(unsigned int i = 0; i < dataIDs.size(); i++)
+	{
+		size += sizeof(char) * dataIDs[i].size() + 1;
+
+	}
+
+	// size needed for the the bytedata length
+	size += sizeof(int) * entryCount;
+
+	// size needed for the actual data
+	size += sizeof(char) * dataArray.size();
+
+	// size needed for the datalength fields
+	size += sizeof(int) * entryCount;
+
+	// size needed for the type sizes
+	size += sizeof(int) * entryCount;
+
+	// size needed for the offsets
+	size += sizeof(int) * entryCount;
+
+	return size;
 }
 
 bool SaveNode::is_big_endian(void) 

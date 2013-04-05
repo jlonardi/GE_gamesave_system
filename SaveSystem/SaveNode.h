@@ -35,6 +35,8 @@ private:
 
 	void byteArrayToData(void* data, size_t size, unsigned int length, unsigned int index);
 
+	size_t nodeInternalDataLength();
+
 public:
 
 	SaveNode(const SaveNode& orig);

@@ -23,6 +23,22 @@ SUITE(NodeSavingTests)
 			node.add("floats", floats, 8);
 			node.add("a single double", singleDouble);
 		}
+		
+		// Just a helper function for debug
+		void printAsBits(char bytes[], int size)
+		{
+			for(int i = 0; i < size; i++)
+			{
+				char c = bytes[i];
+				for (int j = 7; j >= 0; --j)
+				{
+					putchar( (c & (1 << j)) ? '1' : '0' );
+				}
+				putchar(' ');
+				if(i%4 == 0) putchar('\n');
+			}
+			std::cout << std::endl;
+		}
 
 		~MyFixture()
 		{
@@ -43,13 +59,15 @@ SUITE(NodeSavingTests)
 			|	4  bytes for the length of the node name
 			|	10 bytes for the name (includes null terminator)
 			|------------------------------------------------------------------------------
-			|	12  bytes for the ID lenghts, 3*4 bytes. (ints)
+			|	12  bytes for the ID lengths, 3*4 bytes. (ints)
 			|------------------------------------------------------------------------------
 			|	28  bytes for the node identifiers, 4 bytes + 6 bytes + 15 bytes + 3 null term
 			|------------------------------------------------------------------------------
-			|	12 bytes for the datalengths of the entries 3*4 bytes. (ints)
-			|------------------------------------------------------------------------------
+			|	12 bytes for the bytedata lengths of the entries 3*4 bytes. (ints)
+			|----------------------------------------------------------------------------
 			|	60 bytes for the data <= ints = 5*4 bytes, floats = 8*4, double = 8
+			|------------------------------------------------------------------------------
+			|	12 bytes for the actual datalengths of the entries 3*4 bytes. (ints)
 			|------------------------------------------------------------------------------
 			|	12 bytes for the type sizes of the entry data
 			|------------------------------------------------------------------------------
@@ -58,106 +76,134 @@ SUITE(NodeSavingTests)
 		*/
 		
 		size_t expected_size = 0;
+
 		expected_size += sizeof(bool);
 		expected_size += sizeof(int);
 		expected_size += sizeof(int);
 		expected_size += sizeof(char)*10;
+
 		expected_size += sizeof(int)*3;
 		expected_size += sizeof(char)*28;
 		expected_size += sizeof(int)*3;
 		expected_size += sizeof(int)*5 + sizeof(float)*8 + sizeof(double);
 		expected_size += sizeof(int)*3;
 		expected_size += sizeof(int)*3;
+		expected_size += sizeof(int)*3;
 
 		std::vector<char> data;
 		node.save(data);
-		for(int i = 0; i < data.size(); i++)
-		{
-			char c = data[i];
-			for (int j = 7; j >= 0; --j)
-			{
-				putchar( (c & (1 << j)) ? '1' : '0' );
-			}
-			putchar(' ');
-			if(i%4 == 0) putchar('\n');
-		}
-		
+		//printAsBits(&data[0], data.size());
+
 		int size = 0;
-		
-		// test the node total lenght
-		std::memcpy(&size, &data[sizeof(bool)], sizeof(int));
+		size_t offset = 0;
+
+		offset += sizeof(bool);
+
+		// test the node total length
+		std::memcpy(&size, &data[offset], sizeof(int));
 		CHECK_EQUAL((int)expected_size, size);
-		std::cout << std::endl;
-		size_t offset = sizeof(bool) + sizeof(int);
+		offset += sizeof(int);
 
-		std::cout << "offset: " << offset << std::endl;
-
-		std::cout << "offset before copying name length: " << offset << std::endl;
 		// test the node name length
 		std::memcpy(&size, &data[offset], sizeof(int));
 		CHECK_EQUAL(10, size);
 		offset += sizeof(int);
-		
+
+		// test the node name
+		char name[20];
+		std::memcpy(name, &data[offset], sizeof(char)*10);
+		char comparsionName[10] = {'t','e','s','t',' ','n','o','d','e','\0'};
+		CHECK_ARRAY_EQUAL(comparsionName, name, 10);
+
 		// jumps over the name
 		offset += sizeof(char)*10;
 
-		// read the lenght of the 1st entrys ID
-		std::memcpy(&size, &data[(int)offset], sizeof(int));
-		CHECK_EQUAL(4*sizeof(char), size);
+		// read the length of the 1st entrys ID
+		std::memcpy(&size, &data[offset], sizeof(int));
+		CHECK_EQUAL(5*sizeof(char), size);
 		offset += sizeof(int);
 
-		std::string s;
-		s.clear();
-		char string[5];
-		std::memcpy(string, &data[(int)offset], sizeof(char)*4);
-		s.append(string);
-		std::cout << s << std::endl;
+		// check the name of the 1st node
+		char firstNodeName[5];
+		std::memcpy(firstNodeName, &data[offset], sizeof(char)*5);
+		char firstNodeNameShouldBe[5] = {'i','n','t','s','\0'};
+		CHECK_ARRAY_EQUAL(firstNodeNameShouldBe, firstNodeName, 5);
+		offset += sizeof(char)*5;
 
-		// read the size of the data contained
-		offset += sizeof(char)*4*sizeof(char);
-		std::memcpy(&size, &data[(int)offset], sizeof(int));
+		// read the size of the data bytes
+		std::memcpy(&size, &data[offset], sizeof(int));
 		CHECK_EQUAL(sizeof(int)*sizeof(char)*5, size);
-
-		// jump to the beginning of the next entry, the actual lenght + type size + offset
-		offset += sizeof(int)*3;
-		// the 2nd entrys size of the name
-		std::memcpy(&size, &data[(int)offset], sizeof(int));
-		CHECK_EQUAL(6*sizeof(char), size);
-		// the lenght of the 2nd entrys data, 8 floats as bytes
-		offset += sizeof(char)*6*sizeof(char);
-		//std::memcpy(&size, &data[int(offset)], sizeof(int));
-		CHECK_EQUAL(sizeof(float)*sizeof(char)*8, size);
-
-		// the beginning of the 2nd entrys data
 		offset += sizeof(int);
+
+		// jump over the data
+		offset += sizeof(int)*sizeof(char)*5;
+		
+		// read the "true length" of the saved 
+		std::memcpy(&size, &data[offset], sizeof(int));
+		CHECK_EQUAL(5, size);
+		offset += sizeof(int);
+
+		// read the type size of the saved data
+		std::memcpy(&size, &data[offset], sizeof(int));
+		CHECK_EQUAL(sizeof(int), size);
+		offset += sizeof(int);
+
+		// read the offset of the dataArray of the 1st entry
+		std::memcpy(&size, &data[offset], sizeof(int));
+		CHECK_EQUAL(0, size);
+		offset += sizeof(int);
+
+		// the 2nd entrys name size (null terminator included)
+		std::memcpy(&size, &data[offset], sizeof(int));
+		CHECK_EQUAL(7, size);
+		offset += sizeof(int);
+
+		// jump over the name
+		offset += sizeof(char)*7;
+
+		// the length of the 2nd entrys data, 8 floats as bytes
+		std::memcpy(&size, &data[offset], sizeof(int));
+		CHECK_EQUAL(sizeof(float)*sizeof(char)*8, size);
+		offset += sizeof(int);
+
 		// jump to the last one
 		offset += sizeof(float)*7;
 		// check its value
+
 		float f = 0;
 		std::memcpy(&f, &data[(int)offset], sizeof(float));
 		CHECK_EQUAL(7.844f, f);
 
-		// to the actual lenght of the float array
+		// to the actual length of the float array
 		offset += sizeof(float);
 		// check it
 		std::memcpy(&size, &data[(int)offset], sizeof(int));
 		CHECK_EQUAL(8, size);
+		offset += sizeof(int);
 
 		// jump to the beginning of the last ofset (skip type size and offset)
 		offset += sizeof(int)*2;
-		// store the offset
-		size_t lastEntryOffset = offset;
-		// and jump to the last entrys offset info
-		offset += sizeof(int);		// jump over the ID lenght
-		offset += sizeof(char)*15;	// jump over the ID
-		offset += sizeof(int);		// jump over the datalenght
-		offset += sizeof(double);	// jump over the data
-		offset += sizeof(int);		// jump over the actual lenght
-		offset += sizeof(int);		// jump over the type size
+	
+		// and jump over the ID info
+		offset += sizeof(int);		// jump over the ID length
+		offset += sizeof(char)*16;	// jump over the ID
 
-		// check the offset
+		// test last entrys length
+		std::memcpy(&size, &data[(int)offset], sizeof(int));
+		CHECK_EQUAL(sizeof(double), size);
+		offset += sizeof(int);		
+
+		offset += sizeof(double);	// jump over the data
+		offset += sizeof(int);		// jump over the actual length
+
+		// check the doubles type size stored
+		std::memcpy(&size, &data[(int)offset], sizeof(int));
+		CHECK_EQUAL(sizeof(double), size);
+		offset += sizeof(int);	
+			
+		// check the offset	
+		size_t lastEntryOffset = sizeof(int)*5 + sizeof(float)*8;
 		std::memcpy(&size, &data[(int)offset], sizeof(int));
 		CHECK_EQUAL((int)lastEntryOffset, size);
 	}
-
 }
