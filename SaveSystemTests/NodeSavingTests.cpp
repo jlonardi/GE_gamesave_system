@@ -2,9 +2,9 @@
 #include "../SaveSystem/SaveNode.h"
 #include <stdint.h>
 #include <cstdio>
-#include <bitset>
+//#include <bitset>
 
-SUITE(NodeSavingTests)
+SUITE(SavingTests)
 {
 	int ints[5] = {32575,534,345,345,6};
 	float floats[8] = {3.554f,568.223f,456.844f,8.5654f,8789.848f,2231.42f,348.486f,7.844f};
@@ -23,7 +23,7 @@ SUITE(NodeSavingTests)
 			node.add("floats", floats, 8);
 			node.add("a single double", singleDouble);
 		}
-		
+
 		// Just a helper function for debug
 		void printAsBits(char bytes[], int size)
 		{
@@ -42,42 +42,43 @@ SUITE(NodeSavingTests)
 
 		~MyFixture()
 		{
-        
+
 		}
 	};
 
 	TEST_FIXTURE(MyFixture, SavingTheNode)
 	{
-		
+
 		/*
-			The expected size of the node is assumed by calculating the bytes needed to store the data.
-			For understanding of the data is structured please see the nodes .cpp file comments on the 
-			save function. The values shown are assumptions but they are here to clarify.
-			 ------------------------------------------------------------------------------
-			|	1  byte for the boolean to tell the endianness of the save.
-			|	4  bytes (one int) to tell the total size of the node.
-			|	4  bytes for the length of the node name
-			|	10 bytes for the name (includes null terminator)
-			|------------------------------------------------------------------------------
-			|	12  bytes for the ID lengths, 3*4 bytes. (ints)
-			|------------------------------------------------------------------------------
-			|	28  bytes for the node identifiers, 4 bytes + 6 bytes + 15 bytes + 3 null term
-			|------------------------------------------------------------------------------
-			|	12 bytes for the bytedata lengths of the entries 3*4 bytes. (ints)
-			|----------------------------------------------------------------------------
-			|	60 bytes for the data <= ints = 5*4 bytes, floats = 8*4, double = 8
-			|------------------------------------------------------------------------------
-			|	12 bytes for the actual datalengths of the entries 3*4 bytes. (ints)
-			|------------------------------------------------------------------------------
-			|	12 bytes for the type sizes of the entry data
-			|------------------------------------------------------------------------------
-			|	12 bytes for offsets
-			 ------------------------------------------------------------------------------
+		The expected size of the node is assumed by calculating the bytes needed to store the data.
+		For understanding of the data is structured please see the nodes .cpp file comments on the 
+		save function. The values shown are assumptions but they are here to clarify.
+		------------------------------------------------------------------------------
+		|	1  byte for the boolean to tell the endianness of the save.
+		|	4  bytes (one int) to tell the total size of the node.
+		|	4  bytes for the length of the node name
+		|	10 bytes for the name (includes null terminator)
+		|------------------------------------------------------------------------------
+		|	12  bytes for the ID lengths, 3*4 bytes. (ints)
+		|------------------------------------------------------------------------------
+		|	28  bytes for the node identifiers, 4 bytes + 6 bytes + 15 bytes + 3 null term
+		|------------------------------------------------------------------------------
+		|	12 bytes for the bytedata lengths of the entries 3*4 bytes. (ints)
+		|----------------------------------------------------------------------------
+		|	60 bytes for the data <= ints = 5*4 bytes, floats = 8*4, double = 8
+		|------------------------------------------------------------------------------
+		|	12 bytes for the actual datalengths of the entries 3*4 bytes. (ints)
+		|------------------------------------------------------------------------------
+		|	12 bytes for the type sizes of the entry data
+		|------------------------------------------------------------------------------
+		|	12 bytes for offsets
+		------------------------------------------------------------------------------
 		*/
-		
+
 		size_t expected_size = 0;
 
 		expected_size += sizeof(bool);
+		expected_size += sizeof(int);
 		expected_size += sizeof(int);
 		expected_size += sizeof(int);
 		expected_size += sizeof(char)*10;
@@ -102,6 +103,11 @@ SUITE(NodeSavingTests)
 		// test the node total length
 		std::memcpy(&size, &data[offset], sizeof(int));
 		CHECK_EQUAL((int)expected_size, size);
+		offset += sizeof(int);
+
+		// test the node entry count
+		std::memcpy(&size, &data[offset], sizeof(int));
+		CHECK_EQUAL(3, size);
 		offset += sizeof(int);
 
 		// test the node name length
@@ -137,7 +143,7 @@ SUITE(NodeSavingTests)
 
 		// jump over the data
 		offset += sizeof(int)*sizeof(char)*5;
-		
+
 		// read the "true length" of the saved 
 		std::memcpy(&size, &data[offset], sizeof(int));
 		CHECK_EQUAL(5, size);
@@ -183,7 +189,7 @@ SUITE(NodeSavingTests)
 
 		// jump to the beginning of the last ofset (skip type size and offset)
 		offset += sizeof(int)*2;
-	
+
 		// and jump over the ID info
 		offset += sizeof(int);		// jump over the ID length
 		offset += sizeof(char)*16;	// jump over the ID
@@ -200,7 +206,7 @@ SUITE(NodeSavingTests)
 		std::memcpy(&size, &data[(int)offset], sizeof(int));
 		CHECK_EQUAL(sizeof(double), size);
 		offset += sizeof(int);	
-			
+
 		// check the offset	
 		size_t lastEntryOffset = sizeof(int)*5 + sizeof(float)*8;
 		std::memcpy(&size, &data[(int)offset], sizeof(int));

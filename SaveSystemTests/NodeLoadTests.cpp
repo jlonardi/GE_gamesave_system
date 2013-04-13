@@ -1,108 +1,55 @@
 #include "../UnitTest++/src/UnitTest++.h"
 #include "../SaveSystem/SaveNode.h"
-SUITE(NodeLoadingTests)
+#include <cstring>
+
+SUITE(LoadTests)
 {
 
-	int ints[5] = {32575,534,345,345,6};
-	float floats[8] = {3.554f,568.223f,456.844f,8.5654f,8789.848f,2231.42f,348.486f,7.844f};
-	double singleDouble = 5894.6454;
-	bool truths[4] = {true,true,false,true};
-	double anOtherDouble = 42;
-	int moreInts[7] = {2,534,345,345,6,564,4};
+	double doubles[3] = {2.5843545, 3.848468, 8484.6546};
+	int ints[4] = {4, 56, 48, 86};
 
 	struct MyFixture
 	{
-		SaveNode  node;
+		SaveNode node1;
+		SaveNode node2;
 
-		MyFixture() : node("test node")
+		MyFixture() : node1("test node"), node2()
 		{
-       
-		
-			node.add("ints", ints, 5);
-			node.add("floats", floats, 8);
-			node.add("a single double", singleDouble);
-			node.add("truths", truths, 4);
-			node.add("an other single double", anOtherDouble);
-			node.add("more ints", moreInts, 7);
-		}
+			node1.add("doubles", doubles, 3);
+			node1.add("ints", ints, 4);
 
-		~MyFixture()
-		{
-        
+			std::vector<char> data;
+			node1.save(data);
+
+			node2.load(data);
 		}
+		~MyFixture() {}
 	};
 
-	TEST_FIXTURE(MyFixture, LoadingSingleDouble)
+	TEST_FIXTURE(MyFixture, EntryCount)
 	{
-		double d;
-		node.load("a single double", d);
-		CHECK_EQUAL(singleDouble, d);
+		int entryCount = node2.getEntryCount();
+		CHECK_EQUAL(2, entryCount);
 	}
 
-	TEST_FIXTURE(MyFixture, LoadingIntArray)
+	TEST_FIXTURE(MyFixture, NodeName)
 	{
-		int i[7];
-		i[1] = 0;
-		node.load("more ints", i, 7);
-		CHECK_EQUAL(534, i[1]);
-		CHECK_ARRAY_EQUAL(moreInts, i, 7);
+		std::string name, savedName("test node");
+		name = node2.getIdentifier();
+		CHECK_ARRAY_EQUAL(savedName.c_str(), name.c_str(), 10);
 	}
 
-	TEST_FIXTURE(MyFixture, LoadingFloatArray)
+	TEST_FIXTURE(MyFixture, pollFirstEntryAfterLoad)
 	{
-		float f[8];
-		node.load("floats", f, 8);
-		CHECK_EQUAL(2231.42f, f[5]);
-		CHECK_ARRAY_EQUAL(floats, f, 8);
+		double otherDoubles[3];
+		node2.poll("doubles", otherDoubles, 3);
+		CHECK_ARRAY_EQUAL(doubles, otherDoubles, 3);
 	}
 
-	TEST_FIXTURE(MyFixture, LoadingBooleanArray)
+	TEST_FIXTURE(MyFixture, pollSecondEntryAfterLoad)
 	{
-		bool b[4];
-		node.load("truths", b, 4);
-		CHECK_EQUAL(true, b[0]);
-		CHECK_ARRAY_EQUAL(truths, b, 4);
-	}
-
-	TEST_FIXTURE(MyFixture, LoadingBadValues)
-	{
-			double* d;
-			d = NULL;
-			try
-			{
-				node.load("a single double", d);
-				CHECK(false);
-			} catch(std::runtime_error)
-			{
-				CHECK(true);
-			}
-
-			int dummyInts[4];
-			try
-			{
-				node.load("you wont find this", dummyInts);
-				CHECK(false);
-			} catch(std::runtime_error)
-			{
-				CHECK(true);
-			}
-
-			float dummyFloats[8];
-			try
-			{
-				node.load("floats", dummyFloats, 7);
-				CHECK(false);
-			} catch(std::runtime_error)
-			{
-				CHECK(true);
-			}
-			try
-			{
-				node.load("floats", dummyFloats, 9);
-				CHECK(false);
-			} catch(std::runtime_error)
-			{
-				CHECK(true);
-			}
+		int otherInts[4];
+		node2.poll("ints", otherInts, 4);
+		CHECK_ARRAY_EQUAL(ints, otherInts, 4);
 	}
 }

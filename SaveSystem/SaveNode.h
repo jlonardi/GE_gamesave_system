@@ -1,3 +1,6 @@
+#ifndef SAVENODE_H
+#define	SAVENODE_H
+
 #include <string>
 #include <map>
 #include <vector>
@@ -6,20 +9,8 @@
 #include <stdexcept>
 #include <iostream>
 
-enum dataType{
-	INT,
-	DOUBLE,
-	FLOAT,
-	BOOL,
-	CHAR,
-	INT_ARRAY,
-	DOUBLE_ARRAY,
-	FLOAT_ARRAY,
-	BOOL_ARRAY,
-	CHAR_ARRAY
-};
-
 class SaveNode {
+
 private:
 	std::string identifier;
 	std::vector<std::string> dataIDs;
@@ -27,8 +18,6 @@ private:
 	std::vector<int> dataLengths;
 	std::vector<int> typeSizes;
 	std::vector<int> offsets;
-	
-	size_t getTypeSize(dataType type);
 
 	// Copy the given data in a char array (we want to save the data in 1 byte chunks)
 	void dataToByteArray(void* data, size_t size, unsigned int length);
@@ -36,6 +25,8 @@ private:
 	void byteArrayToData(void* data, size_t size, unsigned int length, unsigned int index);
 
 	size_t nodeInternalDataLength();
+
+	void swap(SaveNode& orig);
 
 public:
 
@@ -47,12 +38,10 @@ public:
 
 	SaveNode& operator=(const SaveNode& other);
 
-	void swap(SaveNode& orig);
-
 	void setID(std::string id);
 
 	/*
-		The function that saves the given data by "data" in to the node.
+	The function that saves the given data by "data" in to the node.
 	*/
 	template <typename TYPE>
 	void add(const std::string& id, TYPE* data, unsigned int length = 1) 
@@ -73,10 +62,10 @@ public:
 	}
 
 	/*
-		The function that loads the stored data by the node in the given container "data"
+	The function that loads the stored data by the node in the given container "data"
 	*/
 	template <typename TYPE>
-	void load(const std::string& id, TYPE* data, unsigned int length = 1) 
+	void poll(const std::string& id, TYPE* data, unsigned int length = 1) 
 	{
 		// Checks that the inputs are valid
 		if(data == NULL) throw std::runtime_error("Given data was NULL.");
@@ -90,9 +79,9 @@ public:
 	}
 
 	template <typename TYPE>
-	void load(const std::string& id, TYPE &data) 
+	void poll(const std::string& id, TYPE &data) 
 	{
-		load(id, &data);
+		poll(id, &data);
 	}
 
 	std::string getIdentifier() 
@@ -119,3 +108,5 @@ public:
 
 	virtual ~SaveNode();
 };
+
+#endif // !SAVENODE_H
