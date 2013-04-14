@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 
 # These all are compiled in a same way
-set(PROGRAMS Main.cpp NodePollTests.cpp NodeLoadTests.cpp NodeDataAdditionTests.cpp NodeSavingTests.cpp)
+set(PROGRAMS Main.cpp NodePollTests.cpp NodeLoadTests.cpp NodeDataAdditionTests.cpp NodeSavingTests.cpp NodeConstructorTests.cpp SaveSystemSaveTests.cpp)
 # Add them as executables
 add_executable(SaveSystemTests ${PROGRAMS})
 
