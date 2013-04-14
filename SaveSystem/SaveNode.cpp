@@ -3,17 +3,16 @@
 #include <stdint.h>
 #include <iostream>
 
-SaveNode::SaveNode() : identifier(""), dataLengths(), dataArray(), dataIDs()
+SaveNode::SaveNode() : identifier(""), dataIDs(), dataArray(), dataLengths(), typeSizes(), offsets()
 {
 }
 
-SaveNode::SaveNode(const SaveNode& other) : identifier(other.identifier), dataLengths(other.dataLengths),
-	dataArray(other.dataArray), dataIDs(other.dataIDs)
+SaveNode::SaveNode(const SaveNode& other) : identifier(other.identifier), dataIDs(other.dataIDs),
+	dataArray(other.dataArray), dataLengths(other.dataLengths), typeSizes(other.typeSizes), offsets(other.offsets)
 {
 }
 
-SaveNode::SaveNode(std::string id) : identifier(id), dataLengths(),
-	dataArray(), dataIDs()
+SaveNode::SaveNode(std::string id) : identifier(id), dataIDs(), dataArray(), dataLengths(), typeSizes(), offsets()
 { 
 }
 
