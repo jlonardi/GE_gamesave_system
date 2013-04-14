@@ -77,7 +77,7 @@ SUITE(SavingTests)
 
 		size_t expected_size = 0;
 
-		expected_size += sizeof(bool);
+		//expected_size += sizeof(bool);
 		expected_size += sizeof(int);
 		expected_size += sizeof(int);
 		expected_size += sizeof(int);
@@ -97,8 +97,6 @@ SUITE(SavingTests)
 
 		int size = 0;
 		size_t offset = 0;
-
-		offset += sizeof(bool);
 
 		// test the node total length
 		std::memcpy(&size, &data[offset], sizeof(int));

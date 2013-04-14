@@ -44,8 +44,6 @@ void SaveSystem::save(char* path)
 	std::memcpy(&data[offset], &countOfNodes, sizeof(int));
 	offset += sizeof(int);
 
-	std::cout << "data size: " << data.size() << std::endl;
-
 	for(std::map<Serializable*,SaveNode>::iterator it = nodeMap.begin(); it!=nodeMap.end(); ++it)
 	{
 		it->first->save(it->second);

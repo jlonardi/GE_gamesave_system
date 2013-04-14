@@ -104,8 +104,6 @@ public:
 
 	void load(std::vector<char>& nodeData);
 
-	bool is_big_endian(void);
-
 	virtual ~SaveNode();
 };
 

@@ -96,9 +96,6 @@ SUITE(AddingToNode)
 
 	TEST(AddMultipleEntrysToNode)
 	{
-		// This test contains multiple different tests to make sure the data
-		// is stored corectly in the char array.
-
 		node = SaveNode("multinode");
 
 		int ints[5] = {32575,534,345,345,6};
@@ -115,50 +112,11 @@ SUITE(AddingToNode)
 		node.add("an other single double", anOtherDouble);
 		node.add("more ints", moreInts, 7);
 
-		//std::vector<char> theData = node.getDataArray();
-		/*
-			Now what we try is to extract the value of the single double of the value
-			42 from the array stored all in chars.
+		int totalSize = (sizeof(int)*12)/sizeof(char) + (sizeof(float)*8)/sizeof(char)
+					+ (sizeof(double)*2)/sizeof(char) + (sizeof(bool)*4)/sizeof(char);
 
-			The offset of the data where the double starts can be calculated from the
-			size of the given arrays and multiplying those with the sizeof() of the
-			corresponding type.
-		*/
-		/*
-		unsigned int offset = sizeof(int)*5 + sizeof(float)*8 + sizeof(double) + sizeof(bool)*4;
-
-		double d;
-		std::memcpy(&d, &theData[offset], sizeof(double));
-		CHECK_EQUAL(42, d);
-		*/
-
-		/*
-			The same but now for the 5th float.
-		*/
-
-		/*offset = sizeof(int)*5 + sizeof(float)*4;
-
-		float f;
-		std::memcpy(&f, &theData[offset], sizeof(float));
-		CHECK_EQUAL(8789.848f, f);*/
-
-		/*
-			And once more for the 3rd boolean value.
-		*/ 
-		/*offset = sizeof(int)*5 + sizeof(float)*8 + sizeof(double) + sizeof(bool)*2;
-
-		bool truth;
-		std::memcpy(&truth, &theData[offset], sizeof(bool));
-		CHECK(!truth);*/
-
-		/* 
-			And the last element.
-		*/
-		/*offset = sizeof(int)*5 + sizeof(float)*8 + sizeof(double) + sizeof(bool)*4 + sizeof(double) + sizeof(int)*6;
-
-		int i;
-		std::memcpy(&i, &theData[offset], sizeof(int));
-		CHECK_EQUAL(4, i);*/
+		CHECK_EQUAL(totalSize, node.getDataByteCount());
+		CHECK_EQUAL(6, node.getEntryCount());
 	}
 
 	TEST(invalid_inserts)

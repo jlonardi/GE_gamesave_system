@@ -125,14 +125,16 @@ void SaveNode::save(std::vector<char>& nodeData)
 	size_t dataSize = nodeInternalDataLength();
 
 	nodeData.resize((int)dataSize);
+	int offset = 0;
 
 	// copy the endiannes info
-	bool isBigEndian = is_big_endian();
-	std::memcpy(&nodeData[0], &isBigEndian, sizeof(bool));
+	//bool isBigEndian = is_big_endian();
+	//std::memcpy(&nodeData[0], &isBigEndian, sizeof(bool));
+	//offset += (int)sizeof(bool);
 
 	// copy the size of the node
-	std::memcpy(&nodeData[sizeof(bool)], &dataSize, sizeof(int));
-	int offset = (int)sizeof(bool) + (int)sizeof(int);
+	std::memcpy(&nodeData[offset], &dataSize, sizeof(int));
+	offset += (int)sizeof(int);
 
 	int countOfEntrys = dataIDs.size();
 
@@ -190,10 +192,12 @@ void SaveNode::save(std::vector<char>& nodeData)
 void SaveNode::load(std::vector<char>& nodeData)
 {
 	size_t offset = 0;
+
 	// Extracts information about the endianess
-	bool isBigEndian;
-	std::memcpy(&isBigEndian, &nodeData[0], sizeof(bool));
-	offset += sizeof(bool);
+	//bool isBigEndian;
+	//std::memcpy(&isBigEndian, &nodeData[0], sizeof(bool));
+	//offset += sizeof(bool);
+
 	// Gets the node bytecount and checks it matches with the given data
 	int byteLenghtOfNode = 0;
 	std::memcpy(&byteLenghtOfNode, &nodeData[offset], sizeof(int));
@@ -274,7 +278,7 @@ size_t SaveNode::nodeInternalDataLength()
 {
 	size_t size = 0;
 	// endiannes
-	size += sizeof(bool);
+	//size += sizeof(bool);
 
 	// node length field
 	size += sizeof(int);
@@ -317,15 +321,15 @@ size_t SaveNode::nodeInternalDataLength()
 	return size;
 }
 
-bool SaveNode::is_big_endian(void) 
-{
-	union {
-		uint32_t i;
-		char c[4];
-	} bint = {0x01020304};
-
-	return bint.c[0] == 1; 
-}
+//bool SaveNode::is_big_endian(void) 
+//{
+//	union {
+//		uint32_t i;
+//		char c[4];
+//	} bint = {0x01020304};
+//
+//	return bint.c[0] == 1; 
+//}
 
 SaveNode::~SaveNode()
 {
