@@ -80,9 +80,7 @@ The following shows the structure of the data saved in the vector.
 
 ------------------------------------------------------------------------------
 |----------------	THE HEADER OF THE NODE DATA
-|------------------------------------------------------------------------------
-|	A single byte to tell the endianness of the save.
-|------------------------------------------------------------------------------
+|-----------------------------------------------------------------------------
 |	A value that tells the length of the whole node as bytes.
 |------------------------------------------------------------------------------
 |	A value that tells amount of entrys.
@@ -320,16 +318,6 @@ size_t SaveNode::nodeInternalDataLength()
 
 	return size;
 }
-
-//bool SaveNode::is_big_endian(void) 
-//{
-//	union {
-//		uint32_t i;
-//		char c[4];
-//	} bint = {0x01020304};
-//
-//	return bint.c[0] == 1; 
-//}
 
 SaveNode::~SaveNode()
 {

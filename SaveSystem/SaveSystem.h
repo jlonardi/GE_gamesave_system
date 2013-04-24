@@ -10,6 +10,7 @@ class SaveSystem
 private:
 
 	std::map<Serializable*,SaveNode> nodeMap;
+	std::vector<Serializable*> keys;
 
 	void swap(SaveSystem& other);
 
@@ -23,7 +24,13 @@ public:
 
 	void attach(Serializable* saveObject, std::string id);
 
-	void detach(Serializable* saveObject, std::string id);
+	void detachByObject(Serializable* saveObject);
+
+	void detachById(std::string id);
+
+	void reset();
+
+	std::vector<Serializable*> getAttachedObjects();
 
 	void save(char* path);
 
